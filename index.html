@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【特典】解説動画プロンプト生成ツール</title>
+    <!-- Tailwind CSS (CDN for standalone HTML) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Zen+Maru+Gothic:wght@400;500;700&display=swap');
+
+        :root {
+            --bg-color: #121418;
+            --glass-bg: rgba(30, 34, 42, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent: #6366f1; /* Muted Indigo */
+            --accent-hover: #4f46e5;
+        }
+
+        body {
+            font-family: 'Zen Maru Gothic', 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.05), transparent 25%);
+            min-height: 100vh;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+        }
+
+        .input-field {
+            background: rgba(15, 17, 21, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            transition: all 0.2s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Micro animation for copy toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="p-6 md:p-12 flex justify-center items-start">
+
+    <div class="max-w-3xl w-full">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold mb-3 tracking-tight">解説動画プロンプト生成ツール</h1>
+            <p class="text-slate-400">テーマを入力するだけで、AIに丸投げできるショート動画用プロンプトを自動生成します。</p>
+        </header>
+
+        <!-- Main Form Panel -->
+        <div class="glass-panel p-6 md:p-8 mb-8">
+            <form id="generator-form" class="space-y-6">
+                
+                <div>
+                    <label for="theme" class="block text-sm font-medium text-slate-300 mb-2">1. 解説したいテーマ <span class="text-red-400">*</span></label>
+                    <input type="text" id="theme" required placeholder="例：AIツールで挫折しないための環境構築のコツ" 
+                           class="input-field w-full px-4 py-3 rounded-lg focus:ring-0">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="target" class="block text-sm font-medium text-slate-300 mb-2">2. 想定視聴者</label>
+                        <input type="text" id="target" placeholder="例：ツール設定ですぐ手が止まる初心者" 
+                               class="input-field w-full px-4 py-3 rounded-lg focus:ring-0">
+                    </div>
+                    <div>
+                        <label for="tone" class="block text-sm font-medium text-slate-300 mb-2">3. 動画の雰囲気</label>
+                        <select id="tone" class="input-field w-full px-4 py-3 rounded-lg focus:ring-0 appearance-none">
+                            <option value="関西弁風で、優しく励ますトーン">関西弁風で、優しく励ますトーン（おすすめ）</option>
+                            <option value="論理的でわかりやすいトーン">論理的でわかりやすいトーン</option>
+                            <option value="感情に寄り添うエモいトーン">感情に寄り添うエモいトーン</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="length" class="block text-sm font-medium text-slate-300 mb-2">4. 動画の長さ（目安）</label>
+                    <select id="length" class="input-field w-full px-4 py-3 rounded-lg focus:ring-0 appearance-none">
+                        <option value="60秒程度のショート動画（TikTok/Reels/Shorts向け）">ショート動画（約60秒）</option>
+                        <option value="3分程度の解説動画（YouTube向け）">長尺解説（約3分）</option>
+                    </select>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" class="btn-primary w-full py-4 rounded-xl font-bold text-lg shadow-lg flex justify-center items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        魔法のプロンプトを生成する
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Result Panel -->
+        <div id="result-container" class="glass-panel p-6 md:p-8 hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">出力されたプロンプト</h2>
+                <button id="copy-btn" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    コピーする
+                </button>
+            </div>
+            <p class="text-sm text-slate-400 mb-4">このプロンプトをコピーして、ChatGPT、Claude、またはNoLangなどの動画生成AIにそのまま貼り付けてください。</p>
+            
+            <div class="relative">
+                <textarea id="result-prompt" readonly class="input-field w-full h-96 p-4 rounded-xl resize-none font-mono text-sm leading-relaxed" spellcheck="false"></textarea>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast glass-panel px-6 py-4 flex items-center gap-3 text-emerald-400">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        <span class="font-medium">クリップボードにコピーしました！</span>
+    </div>
+
+    <script>
+        document.getElementById('generator-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const theme = document.getElementById('theme').value;
+            const target = document.getElementById('target').value || '指定なし';
+            const tone = document.getElementById('tone').value;
+            const length = document.getElementById('length').value;
+
+            const promptText = `あなたはプロのショート動画クリエイター兼シナリオライターです。
+以下の条件に基づいて、視聴者が最後まで離脱せずに見入ってしまう「解説動画用の台本」と「シーンごとの画像生成プロンプト」を作成してください。
+
+【条件】
+- 動画のテーマ：${theme}
+- 想定視聴者：${target}
+- 動画の長さ目安：${length}
+- 動画の雰囲気・トーン：${tone}
+
+【構成のルール（ショート動画の黄金比）】
+1. フック（最初の3秒）：視聴者の悩みや疑問を鋭く突き、スクロールを止める。
+2. 課題への共感：視聴者を責めず、「できないのはあなたのせいではない」と寄り添う。
+3. 解決策の提示（本文）：専門用語を避け、小学生でもわかる言葉で具体的な解決策を1つだけ提示する。
+4. コールトゥアクション（CTA）：動画の最後に、保存やフォロー、あるいは「今日できる1動作」を促す。
+
+【出力形式】
+以下のフォーマットで、シーンごとに「読み上げるナレーション（台本）」と「背景に表示する画像の生成プロンプト」を出力してください。画像プロンプトは画像生成AI（Midjourney等）でそのまま使える英語で記述してください。
+
+---
+■ タイトル案（目を引くタイトルを3つ提案してください）
+1.
+2.
+3.
+
+■ 動画台本＆画像プロンプト
+[シーン1：0秒〜3秒（フック）]
+ナレーション：〇〇〇〇
+画面テロップ：〇〇〇〇
+画像プロンプト：(e.g., A cinematic shot of a frustrated person staring at a laptop, dark moody lighting, hyper-realistic --ar 9:16)
+
+[シーン2：3秒〜15秒（共感）]
+ナレーション：〇〇〇〇
+画面テロップ：〇〇〇〇
+画像プロンプト：〇〇〇〇
+
+[シーン3：15秒〜45秒（解決策）]
+ナレーション：〇〇〇〇
+画面テロップ：〇〇〇〇
+画像プロンプト：〇〇〇〇
+
+[シーン4：45秒〜60秒（CTA）]
+ナレーション：〇〇〇〇
+画面テロップ：〇〇〇〇
+画像プロンプト：〇〇〇〇
+---
+
+出力は上記のフォーマットに従い、そのまま使える完成品を提示してください。`;
+
+            const resultContainer = document.getElementById('result-container');
+            const resultPrompt = document.getElementById('result-prompt');
+            
+            resultPrompt.value = promptText;
+            
+            // Show result with simple fade-in
+            resultContainer.classList.remove('hidden');
+            resultContainer.style.opacity = '0';
+            setTimeout(() => {
+                resultContainer.style.transition = 'opacity 0.5s ease';
+                resultContainer.style.opacity = '1';
+                // Scroll to result
+                resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 10);
+        });
+
+        document.getElementById('copy-btn').addEventListener('click', function() {
+            const resultPrompt = document.getElementById('result-prompt');
+            
+            // Modern copy to clipboard
+            navigator.clipboard.writeText(resultPrompt.value).then(() => {
+                // Show toast
+                const toast = document.getElementById('toast');
+                toast.classList.add('show');
+                
+                // Hide toast after 3 seconds
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('コピーに失敗しました。テキストエリアを選択して手動でコピーしてください。');
+            });
+        });
+    </script>
+</body>
+</html>
